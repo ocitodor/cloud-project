@@ -1,0 +1,15 @@
+# Recorder output (real session captures)
+tiktok-chat_*.csv
+tiktok-events_*.csv
+tiktok-botlog_*.txt
+badges-sample_*.txt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+Thumbs.db
+desktop.ini

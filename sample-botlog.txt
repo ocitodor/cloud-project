@@ -1,0 +1,16 @@
+﻿Bot dry-run log — session 2026-05-20 19:00:00
+milestone step 300, min interval 20s, moderators configured: 2
+
+[2026-05-20T19:00:45Z] WOULD POST: Здравей, Sunny Mod ☀️! 🐺 Sunny Mod ☀️ е модератор — имайте уважение! 🛡️   (moderator present (badge))
+[2026-05-20T19:03:00Z] WOULD POST: Здравей, Loyal Regular! 🐺 Радваме се, че си тук!   (VIP present (list))
+[2026-05-20T19:04:00Z] WOULD POST: Здравей, Ivan 💎! 💎 Верен фен от отбора! 🐺   (team fan present (FANS badge))
+[2026-05-20T19:05:05Z] WOULD POST: Благодаря, Dark Wolf 🐺, за 312 тапвания! 💗 Ти си топ! 🐺   (like milestone 300 (session total 312))
+[2026-05-20T19:07:00Z] WOULD POST: Здравей, Team Captain 🛡️! 🐺 Team Captain 🛡️ е модератор — имайте уважение! 🛡️   (moderator present (list))
+[2026-05-20T19:08:35Z] WOULD POST: Благодаря, Nina P. 🌸, за 604 тапвания! 💗 Ти си топ! 🐺   (like milestone 600 (session total 604))
+[2026-05-20T19:11:30Z] WOULD POST: Благодаря, Dark Wolf 🐺, за 903 тапвания! 💗 Ти си топ! 🐺   (like milestone 900 (session total 903))
+[2026-05-20T19:14:40Z] WOULD POST: Здравей, Rositsa 💎! 💎 Верен фен от отбора! 🐺   (team fan present (FANS badge))
+[2026-05-20T19:19:10Z] WOULD POST: Благодаря, 🎨 MIA 🎨, за 1207 тапвания! 💗 Ти си топ! 🐺   (like milestone 1200 (session total 1207))
+
+--- session summary ---
+bot messages: 9 (dropped over queue cap: 0)
+top tappers: dark_wolf99=1502, mia_draws=1207, nina_petrova=908, fan_one=604, kris_bg=311

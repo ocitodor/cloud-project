@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TikTok Events Analyzer</title>
+<style>
+  :root{
+    --bg:#0b0b10; --panel:#14141d; --line:rgba(255,255,255,.08);
+    --txt:#f2f2f6; --dim:#9a9aa6;
+    --tap:#fe2c55; --view:#3fd8e0; --join:#8f7bff; --gold:#ffd166;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--txt);
+       font-family:system-ui,'Segoe UI',Roboto,Arial,sans-serif;
+       padding:26px 18px 60px;max-width:1020px;margin:0 auto}
+  .disp{font-family:'Arial Black','Segoe UI',Impact,sans-serif;
+        letter-spacing:.01em}
+  .num{font-family:Consolas,'Cascadia Mono',monospace}
+
+  /* drop zone -> header */
+  #drop{border:2px dashed rgba(255,255,255,.22);border-radius:16px;
+        padding:54px 20px;text-align:center;cursor:pointer;
+        transition:border-color .15s, background .15s}
+  #drop.over{border-color:var(--tap);background:rgba(254,44,85,.06)}
+  #drop h1{font-size:30px;margin-bottom:8px}
+  #drop h1 .k{color:var(--tap)}
+  #drop p{color:var(--dim);font-size:14px}
+  #drop.loaded{border:0;padding:0;text-align:left;cursor:default}
+
+  .statsbar{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 26px}
+  .stat{background:var(--panel);border:1px solid var(--line);
+        border-radius:12px;padding:10px 14px;min-width:108px}
+  .stat .v{font-size:22px;font-weight:800}
+  .stat .l{font-size:11px;color:var(--dim);text-transform:uppercase;
+           letter-spacing:.08em;margin-top:2px}
+  .stat.tap .v{color:var(--tap)} .stat.view .v{color:var(--view)}
+  .stat.join .v{color:var(--join)} .stat.gold .v{color:var(--gold)}
+
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.12em;
+     color:var(--dim);margin:34px 0 12px}
+  h2 b{color:var(--txt)}
+  .panel{background:var(--panel);border:1px solid var(--line);
+         border-radius:14px;padding:16px}
+
+  /* pulse timeline */
+  #pulse svg{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:18px;font-size:12px;color:var(--dim);
+          margin-top:8px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;
+            margin-right:6px;vertical-align:-1px}
+
+  /* leaderboard */
+  .row{display:flex;align-items:center;gap:10px;padding:6px 0;
+       border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .rk{width:26px;color:var(--dim);font-size:12px;text-align:right}
+  .nm{flex:0 0 34%;overflow:hidden;text-overflow:ellipsis;
+      white-space:nowrap;font-size:14px}
+  .barwrap{flex:1;height:14px;background:rgba(255,255,255,.05);
+           border-radius:7px;overflow:hidden}
+  .bar{height:100%;background:linear-gradient(90deg,#b3902f,var(--gold));
+       border-radius:7px}
+  .val{width:86px;text-align:right;font-size:13px}
+  .pct{width:52px;text-align:right;font-size:11px;color:var(--dim)}
+  .row.me1 .bar{background:linear-gradient(90deg,#8a1830,var(--tap))}
+
+  /* lists */
+  ul.plain{list-style:none;font-size:14px}
+  ul.plain li{padding:5px 0;border-bottom:1px solid var(--line)}
+  ul.plain li:last-child{border-bottom:0}
+  ul.plain .t{color:var(--dim);font-size:12px;margin-right:10px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:760px){.two{grid-template-columns:1fr}}
+
+  /* user lookup */
+  #who{width:100%;background:#0e0e15;border:1px solid var(--line);
+       border-radius:10px;color:var(--txt);padding:11px 14px;font-size:15px}
+  #who:focus{outline:none;border-color:var(--view)}
+  #whoout{margin-top:12px;font-size:14px;line-height:1.7}
+  #whoout .hl{color:var(--view)}
+  .empty{color:var(--dim);font-size:13px;padding:8px 0}
+  #again{margin-top:40px;text-align:center}
+  #again button{background:none;border:1px solid var(--line);color:var(--dim);
+       border-radius:10px;padding:9px 18px;cursor:pointer;font-size:13px}
+  #again button:hover{color:var(--txt);border-color:var(--dim)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+
+<div id="drop">
+  <h1 class="disp">EVENTS <span class="k">ANALYZER</span></h1>
+  <p>Drop one or more <b>tiktok-events_…csv</b> files here, or click to choose.<br>
+     Everything runs in your browser — nothing is uploaded anywhere.</p>
+  <input type="file" id="file" accept=".csv" multiple class="hidden">
+</div>
+
+<div id="report" class="hidden">
+  <div class="statsbar" id="stats"></div>
+
+  <h2><b>Stream pulse</b> — viewers, taps and joins over time</h2>
+  <div class="panel" id="pulse"></div>
+  <div class="legend">
+    <span><i style="background:var(--view)"></i>viewers in room</span>
+    <span><i style="background:var(--tap)"></i>taps per 5 min</span>
+    <span><i style="background:var(--join)"></i>joins per 5 min</span>
+  </div>
+
+  <h2><b>Tap leaderboard</b> — top 20</h2>
+  <div class="panel" id="board"></div>
+
+  <div class="two">
+    <div>
+      <h2><b>New followers</b> — in order</h2>
+      <div class="panel"><ul class="plain" id="follows"></ul></div>
+    </div>
+    <div>
+      <h2><b>Shares</b> — who spread the live</h2>
+      <div class="panel"><ul class="plain" id="shares"></ul></div>
+    </div>
+  </div>
+
+  <h2><b>Questions</b> — from the Q&amp;A panel</h2>
+  <div class="panel"><ul class="plain" id="questions"></ul></div>
+
+  <h2><b>User lookup</b></h2>
+  <div class="panel">
+    <input id="who" placeholder="Type part of a username… e.g. Marto">
+    <div id="whoout" class="empty">Their taps, joins, follows and shares will show here.</div>
+  </div>
+
+  <div id="again"><button onclick="location.reload()">Analyze other files</button></div>
+</div>
+
+<script>
+/*CORE-START*/
+function parseCSV(text){
+  // quote-aware parser: usernames contain commas and quotes
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let f = "", row = [], q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){
+      if (c === '"'){
+        if (text[i+1] === '"'){ f += '"'; i++; } else q = false;
+      } else f += c;
+    } else if (c === '"') q = true;
+    else if (c === ','){ row.push(f); f = ""; }
+    else if (c === '\n'){ row.push(f.replace(/\r$/,"")); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f !== "" || row.length){ row.push(f.replace(/\r$/,"")); rows.push(row); }
+  return rows.filter(r => r.length >= 3);
+}
+
+function analyze(allRows){
+  const ev = [];
+  for (const r of allRows){
+    if (r[0] === "time") continue;                 // header
+    const t = Date.parse(r[0]);
+    if (isNaN(t)) continue;
+    ev.push({ t, user: r[1] || "", type: r[2] || "", detail: r[3] || "" });
+  }
+  ev.sort((a,b) => a.t - b.t);
+  const A = {
+    events: ev, start: ev.length ? ev[0].t : 0, end: ev.length ? ev[ev.length-1].t : 0,
+    taps: new Map(), joins: 0, follows: [], shares: new Map(),
+    questions: [], viewers: [], pauses: 0, users: new Set(), totalTaps: 0
+  };
+  for (const e of ev){
+    if (e.user && e.user !== "stream") A.users.add(e.user);
+    if (e.type === "like"){
+      const m = e.detail.match(/\+(\d+)/);
+      const n = m ? parseInt(m[1], 10) : 0;
+      A.taps.set(e.user, (A.taps.get(e.user) || 0) + n);
+      A.totalTaps += n; e.n = n;
+    } else if (e.type === "join") A.joins++;
+    else if (e.type === "follow") A.follows.push(e);
+    else if (e.type === "share") A.shares.set(e.user, (A.shares.get(e.user) || 0) + 1);
+    else if (e.type === "question") A.questions.push(e);
+    else if (e.type === "viewers"){
+      const v = parseInt(e.detail, 10);
+      if (!isNaN(v)) A.viewers.push({ t: e.t, v });
+    } else if (e.type === "pause") A.pauses++;
+  }
+  return A;
+}
+/*CORE-END*/
+
+const fmtT = t => new Date(t).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+const fmtN = n => n.toLocaleString("en-US");
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function bucketize(A, ms){
+  const b = new Map();
+  const key = t => Math.floor((t - A.start) / ms);
+  for (const e of A.events){
+    const k = key(e.t);
+    if (!b.has(k)) b.set(k, { taps: 0, joins: 0, view: null });
+    const o = b.get(k);
+    if (e.type === "like") o.taps += (e.n || 0);
+    else if (e.type === "join") o.joins++;
+    else if (e.type === "viewers"){
+      const v = parseInt(e.detail, 10);
+      if (!isNaN(v)) o.view = v;
+    }
+  }
+  const n = key(A.end) + 1, out = [];
+  let lastV = 0;
+  for (let i = 0; i < n; i++){
+    const o = b.get(i) || { taps: 0, joins: 0, view: null };
+    if (o.view != null) lastV = o.view;
+    out.push({ taps: o.taps, joins: o.joins, view: lastV,
+               label: fmtT(A.start + i * ms) });
+  }
+  return out;
+}
+
+function drawPulse(A){
+  const BK = 5 * 60 * 1000, bs = bucketize(A, BK);
+  const W = 960, H = 300, P = { l: 46, r: 12, t: 14, b: 34 };
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+  const maxV = Math.max(1, ...bs.map(b => b.view));
+  const maxT = Math.max(1, ...bs.map(b => b.taps));
+  const maxJ = Math.max(1, ...bs.map(b => b.joins));
+  const x = i => P.l + (bs.length === 1 ? iw / 2 : i * iw / (bs.length - 1));
+  const bw = Math.max(2, iw / bs.length * 0.55);
+  let s = "";
+  // tap bars
+  for (let i = 0; i < bs.length; i++){
+    const h = bs[i].taps / maxT * (ih * 0.62);
+    if (h > 0) s += `<rect x="${(x(i) - bw/2).toFixed(1)}" y="${(P.t + ih - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="var(--tap)" opacity="0.75" rx="2"/>`;
+  }
+  // join ticks
+  for (let i = 0; i < bs.length; i++){
+    const h = bs[i].joins / maxJ * (ih * 0.25);
+    if (h > 0) s += `<rect x="${(x(i) - 1).toFixed(1)}" y="${(P.t + ih - h).toFixed(1)}" width="2" height="${h.toFixed(1)}" fill="var(--join)" opacity="0.9"/>`;
+  }
+  // viewer line
+  let d = "";
+  for (let i = 0; i < bs.length; i++){
+    const yy = P.t + ih - bs[i].view / maxV * ih;
+    d += (i ? "L" : "M") + x(i).toFixed(1) + " " + yy.toFixed(1) + " ";
+  }
+  s += `<path d="${d}" fill="none" stroke="var(--view)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  // axes labels
+  s += `<text x="${P.l}" y="${H-10}" fill="#9a9aa6" font-size="11">${bs[0].label}</text>`;
+  s += `<text x="${W-P.r}" y="${H-10}" fill="#9a9aa6" font-size="11" text-anchor="end">${bs[bs.length-1].label}</text>`;
+  s += `<text x="${P.l-6}" y="${P.t+10}" fill="var(--view)" font-size="11" text-anchor="end">${fmtN(maxV)}</text>`;
+  s += `<text x="${P.l-6}" y="${P.t+ih}" fill="#9a9aa6" font-size="11" text-anchor="end">0</text>`;
+  document.getElementById("pulse").innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+}
+
+function render(A){
+  document.getElementById("drop").classList.add("loaded");
+  document.getElementById("drop").innerHTML =
+    `<h1 class="disp" style="font-size:26px">EVENTS <span style="color:var(--tap)">ANALYZER</span>
+     <span style="font-size:13px;color:var(--dim);font-family:system-ui;font-weight:400;margin-left:10px">
+     ${fmtT(A.start)} – ${fmtT(A.end)}</span></h1>`;
+  const durMin = Math.round((A.end - A.start) / 60000);
+  const peak = A.viewers.length ? Math.max(...A.viewers.map(v => v.v)) : 0;
+  const stats = [
+    ["gold", fmtN(A.totalTaps), "total taps"],
+    ["view", fmtN(peak), "peak viewers"],
+    ["join", fmtN(A.joins), "joins"],
+    ["", fmtN(A.users.size), "unique users"],
+    ["", fmtN(A.follows.length), "new follows"],
+    ["", fmtN([...A.shares.values()].reduce((a,b)=>a+b,0)), "shares"],
+    ["", Math.floor(durMin/60) + "h " + (durMin%60) + "m", "duration"],
+  ];
+  document.getElementById("stats").innerHTML = stats.map(s =>
+    `<div class="stat ${s[0]}"><div class="v num">${s[1]}</div><div class="l">${s[2]}</div></div>`).join("");
+
+  drawPulse(A);
+
+  const top = [...A.taps.entries()].sort((a,b) => b[1] - a[1]).slice(0, 20);
+  const mx = top.length ? top[0][1] : 1;
+  document.getElementById("board").innerHTML = top.length ? top.map((u,i) =>
+    `<div class="row ${i===0?"me1":""}">
+       <div class="rk num">${i+1}</div><div class="nm">${esc(u[0])}</div>
+       <div class="barwrap"><div class="bar" style="width:${(u[1]/mx*100).toFixed(1)}%"></div></div>
+       <div class="val num">${fmtN(u[1])}</div>
+       <div class="pct num">${(u[1]/A.totalTaps*100).toFixed(1)}%</div>
+     </div>`).join("") : `<div class="empty">No taps recorded.</div>`;
+
+  document.getElementById("follows").innerHTML = A.follows.length ?
+    A.follows.map(f => `<li><span class="t num">${fmtT(f.t)}</span>${esc(f.user)}</li>`).join("")
+    : `<li class="empty">No new follows this session.</li>`;
+
+  const sh = [...A.shares.entries()].sort((a,b) => b[1] - a[1]);
+  document.getElementById("shares").innerHTML = sh.length ?
+    sh.map(s => `<li>${esc(s[0])} <span class="t num">×${s[1]}</span></li>`).join("")
+    : `<li class="empty">No shares this session.</li>`;
+
+  document.getElementById("questions").innerHTML = A.questions.length ?
+    A.questions.map(q => `<li><span class="t num">${fmtT(q.t)}</span><b>${esc(q.user)}</b>: ${esc(q.detail)}</li>`).join("")
+    : `<li class="empty">No Q&amp;A questions this session.</li>`;
+
+  const who = document.getElementById("who"), out = document.getElementById("whoout");
+  who.oninput = () => {
+    const s = who.value.trim().toLowerCase();
+    if (s.length < 2){ out.className = "empty"; out.textContent = "Their taps, joins, follows and shares will show here."; return; }
+    const names = [...A.users].filter(u => u.toLowerCase().includes(s)).slice(0, 5);
+    if (!names.length){ out.className = "empty"; out.textContent = "No user matches that."; return; }
+    out.className = "";
+    out.innerHTML = names.map(n => {
+      const my = A.events.filter(e => e.user === n);
+      const taps = A.taps.get(n) || 0;
+      const first = fmtT(my[0].t), last = fmtT(my[my.length-1].t);
+      const fol = my.some(e => e.type === "follow") ? " · <span class='hl'>followed!</span>" : "";
+      const shr = my.filter(e => e.type === "share").length;
+      return `<div><b>${esc(n)}</b> — <span class="num">${fmtN(taps)}</span> taps · seen <span class="num">${first}–${last}</span>${fol}${shr ? ` · shared ×${shr}` : ""}</div>`;
+    }).join("");
+  };
+}
+
+function handleFiles(files){
+  const list = [...files].filter(f => /\.csv$/i.test(f.name));
+  if (!list.length){ alert("Drop a tiktok-events_…csv file."); return; }
+  let all = [], left = list.length;
+  for (const f of list){
+    const r = new FileReader();
+    r.onload = () => {
+      all = all.concat(parseCSV(r.result));
+      if (--left === 0){
+        const A = analyze(all);
+        if (!A.events.length){ alert("No event rows found — is this the events CSV (not the chat one)?"); return; }
+        document.getElementById("report").classList.remove("hidden");
+        render(A);
+      }
+    };
+    r.readAsText(f, "utf-8");
+  }
+}
+
+const drop = document.getElementById("drop"), inp = document.getElementById("file");
+drop.addEventListener("click", () => { if (!drop.classList.contains("loaded")) inp.click(); });
+inp.addEventListener("change", () => handleFiles(inp.files));
+["dragover","dragenter"].forEach(x => drop.addEventListener(x, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(x => drop.addEventListener(x, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+</script>
+</body>
+</html>

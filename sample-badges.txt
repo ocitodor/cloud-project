@@ -1,0 +1,16 @@
+﻿Badge probe — session 2026-05-20 19:00:00
+one line per unique user (cap 200); only non-empty badge-ish fields are listed
+
+@moderator_handle_1  (Sunny Mod ☀️)
+    badge_list=[Badge(scene_type=<BadgeSceneType.ADMIN: 1>), Badge(scene_type=<BadgeSceneType.USER_GRADE: 8>)]
+
+@fan_one  (Ivan 💎)
+    badge_list=[Badge(scene_type=<BadgeSceneType.FANS: 10>), Badge(scene_type=<BadgeSceneType.USER_GRADE: 8>)]
+
+@nina_petrova  (Nina P. 🌸)
+    badge_list=[Badge(scene_type=<BadgeSceneType.USER_GRADE: 8>)]
+
+@dark_wolf99  (Dark Wolf 🐺)
+    badge_list=[Badge(scene_type=<BadgeSceneType.USER_GRADE: 8>), Badge(scene_type=<BadgeSceneType.BADGE_SCENE_TYPE_RANK_LIST: 15>)]
+
+--- 4 users sampled ---
